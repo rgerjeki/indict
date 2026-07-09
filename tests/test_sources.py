@@ -8,13 +8,22 @@ from conftest import load_fixture
 
 from indict.models import IndicatorType, Relation, Verdict
 from indict.sources.abuseipdb import AbuseIpdbSource
+from indict.sources.blocklists import BlocklistSource
 from indict.sources.crtsh import CrtShSource
 from indict.sources.dns import DnsSource
 from indict.sources.greynoise import GreyNoiseSource
 from indict.sources.malwarebazaar import MalwareBazaarSource
+from indict.sources.ripestat import RipeStatSource
 from indict.sources.urlscan import UrlscanSource
 from indict.sources.virustotal import VirusTotalSource
 from indict.sources.whois import WhoisSource
+
+_FIREHOL = "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/firehol_level1.netset"
+_TOR = "https://check.torproject.org/torbulkexitlist"
+_SPAMHAUS = "https://www.spamhaus.org/drop/drop.txt"
+_FEODO = "https://feodotracker.abuse.ch/downloads/ipblocklist.txt"
+_URLHAUS = "https://urlhaus.abuse.ch/downloads/text/"
+_OPENPHISH = "https://openphish.com/feed.txt"
 
 
 @respx.mock
@@ -205,6 +214,83 @@ def test_urlscan_collects_ip_pivots(ctx):
     result = UrlscanSource().query("example.com", IndicatorType.DOMAIN, ctx)
     assert result.data["ips"] == ["93.184.216.34"]
     assert result.pivots[0].indicator == "93.184.216.34"
+
+
+# --- Blocklists (keyless reputation from free feeds) ---
+
+@respx.mock
+def test_blocklists_ip_hit_is_malicious(ctx):
+    respx.get(_FIREHOL).mock(return_value=httpx.Response(200, text="# level1\n185.220.101.0/24\n"))
+    respx.get(_TOR).mock(return_value=httpx.Response(200, text="1.2.3.4\n"))
+    respx.get(_SPAMHAUS).mock(return_value=httpx.Response(200, text="203.0.113.0/24 ; SBL1\n"))
+    respx.get(_FEODO).mock(return_value=httpx.Response(200, text="# feodo\n"))
+
+    result = BlocklistSource().query("185.220.101.1", IndicatorType.IP, ctx)
+    assert result.verdict is Verdict.MALICIOUS
+    assert "firehol_level1" in result.data["listed_on"]
+
+
+@respx.mock
+def test_blocklists_ip_miss_is_unknown_not_clean(ctx):
+    for url in (_FIREHOL, _TOR, _SPAMHAUS, _FEODO):
+        respx.get(url).mock(return_value=httpx.Response(200, text="# empty\n"))
+
+    result = BlocklistSource().query("8.8.8.8", IndicatorType.IP, ctx)
+    assert result.verdict is Verdict.UNKNOWN  # absence from a list is not "clean"
+    assert result.data["listed_on"] == []
+    assert set(result.data["checked"]) == {
+        "firehol_level1", "tor_exits", "spamhaus_drop", "feodo_c2",
+    }
+
+
+@respx.mock
+def test_blocklists_url_exact_match_is_malicious(ctx):
+    respx.get(_URLHAUS).mock(
+        return_value=httpx.Response(200, text="https://evil.example/x\nhttp://other.test/\n")
+    )
+    respx.get(_OPENPHISH).mock(return_value=httpx.Response(200, text="# none\n"))
+
+    result = BlocklistSource().query("https://evil.example/x", IndicatorType.URL, ctx)
+    assert result.verdict is Verdict.MALICIOUS
+    assert "urlhaus" in result.data["listed_on"]
+
+
+def test_blocklists_domain_not_flagged_by_a_url_hosted_on_it(ctx):
+    # Regression: a malicious URL on github.com must not make github.com malicious.
+    # Domains are not judged by URL feeds at all, so no feed applies.
+    result = BlocklistSource().query("github.com", IndicatorType.DOMAIN, ctx)
+    assert result.verdict is not Verdict.MALICIOUS
+    assert result.available is False
+
+
+@respx.mock
+def test_blocklists_unavailable_when_no_feed_fetches(ctx):
+    for url in (_FIREHOL, _TOR, _SPAMHAUS, _FEODO):
+        respx.get(url).mock(return_value=httpx.Response(500))
+
+    result = BlocklistSource().query("8.8.8.8", IndicatorType.IP, ctx)
+    assert result.available is False
+
+
+# --- RIPEstat (keyless IP enrichment) ---
+
+@respx.mock
+def test_ripestat_parses_asn_and_abuse(ctx):
+    respx.get("https://stat.ripe.net/data/network-info/data.json").mock(
+        return_value=httpx.Response(200, json={"data": {"asns": ["15169"], "prefix": "8.8.8.0/24"}})
+    )
+    respx.get("https://stat.ripe.net/data/as-overview/data.json").mock(
+        return_value=httpx.Response(200, json={"data": {"holder": "GOOGLE, US"}})
+    )
+    respx.get("https://stat.ripe.net/data/abuse-contact-finder/data.json").mock(
+        return_value=httpx.Response(200, json={"data": {"abuse_contacts": ["abuse@google.com"]}})
+    )
+
+    result = RipeStatSource().query("8.8.8.8", IndicatorType.IP, ctx)
+    assert result.data["asn"] == "15169"
+    assert result.data["as_holder"] == "GOOGLE, US"
+    assert result.data["prefix"] == "8.8.8.0/24"
+    assert "abuse@google.com" in result.data["abuse_contacts"]
 
 
 # --- DNS source: exercised via its pure result builders (no live lookups) ---

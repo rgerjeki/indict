@@ -62,6 +62,8 @@ cp .env.example .env
 | --- | --- | --- | --- |
 | DNS | ip, domain | none | A/AAAA/MX/NS/TXT records, reverse DNS (PTR) |
 | WHOIS (RDAP) | ip, domain | none | Registrar, registration date, nameservers, network/org, domain age |
+| RIPEstat | ip | none | ASN and holder, covering prefix, network abuse contact |
+| Blocklists | ip, url | none | Reputation from free feeds (FireHOL, Tor, Spamhaus, Feodo for IPs; URLhaus, OpenPhish for exact URLs) |
 | crt.sh | domain | none | Subdomains from certificate transparency logs |
 | GreyNoise (community) | ip | none | Benign/malicious classification, scanner/noise labels |
 | MalwareBazaar | hash | none* | Whether a hash is a known malware sample, and its family |
@@ -71,7 +73,19 @@ cp .env.example .env
 
 \* MalwareBazaar (abuse.ch) has begun requiring an auth key on some endpoints.
 `indict` sends one if `MALWAREBAZAAR_API_KEY` is set, and degrades gracefully if
-an anonymous request is rejected.
+an anonymous request is rejected. Some blocklist feeds (also abuse.ch) behave the
+same way.
+
+The blocklists source is what gives keyless mode a real reputation verdict: an IP
+on FireHOL or Feodo, or an exact URL on URLhaus or OpenPhish, comes back malicious
+with no API key at all. It matches URLs exactly and does not judge a bare domain by
+a URL hosted on it (one malicious link on github.com does not make github.com
+malicious), so domain-level reputation is left to the other sources. One honest
+limit: absence from a blocklist reports `unknown`, not `clean`, because not being
+listed is not a clean bill of health. Keyless, `indict`
+can confirm bad, not confirm good; the clean/malicious reputation verdicts for
+hashes and for indicators that are not on any list still come from the keyed
+sources.
 
 ## How it works
 
@@ -258,6 +272,7 @@ src/indict/
   models.py         the normalized result shapes (SourceResult, Pivot, Report)
   config.py         .env / environment loading
   cache.py          local JSON response cache
+  feeds.py          disk cache for downloadable threat-blocklist feeds
   http.py           shared HTTP client with 429 backoff
   redact.py         PII stripping for --redact
   sources/          one module per source, all returning SourceResult

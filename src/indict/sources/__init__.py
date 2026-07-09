@@ -10,10 +10,12 @@ from __future__ import annotations
 
 from .abuseipdb import AbuseIpdbSource
 from .base import Context, Source
+from .blocklists import BlocklistSource
 from .crtsh import CrtShSource
 from .dns import DnsSource
 from .greynoise import GreyNoiseSource
 from .malwarebazaar import MalwareBazaarSource
+from .ripestat import RipeStatSource
 from .urlscan import UrlscanSource
 from .virustotal import VirusTotalSource
 from .whois import WhoisSource
@@ -26,8 +28,10 @@ def all_sources() -> list[Source]:
         # Keyless
         DnsSource(),
         WhoisSource(),
+        RipeStatSource(),
         CrtShSource(),
         GreyNoiseSource(),
+        BlocklistSource(),
         MalwareBazaarSource(),
         UrlscanSource(),
         # Keyed (graceful degradation without a key)

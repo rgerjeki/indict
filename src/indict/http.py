@@ -66,6 +66,12 @@ class Http:
     def get_json(self, url: str, **kwargs: Any) -> Any:
         return self.request_json("GET", url, **kwargs)
 
+    def get_text(self, url: str, **kwargs: Any) -> str:
+        """Fetch a plain-text body (used for downloadable threat feeds)."""
+        response = self._client.get(url, **kwargs)
+        response.raise_for_status()
+        return response.text
+
     def post_json(self, url: str, **kwargs: Any) -> Any:
         return self.request_json("POST", url, **kwargs)
 

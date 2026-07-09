@@ -22,6 +22,7 @@ from . import __version__
 from .cache import Cache
 from .config import Config, load_config
 from .correlate import correlate
+from .feeds import FeedCache
 from .http import Http, RateLimited
 from .indicators import DetectionError, detect
 from .models import IndicatorType, Report, SourceResult
@@ -43,10 +44,12 @@ def triage(
     """Enrich, correlate, and score a single indicator. The reusable core."""
     indicator_type, indicator = detect(value)
 
+    http = Http(timeout=config.http_timeout)
     ctx = Context(
         config=config,
-        http=Http(timeout=config.http_timeout),
+        http=http,
         cache=Cache(config.cache_dir, config.cache_ttl, enabled=config.use_cache),
+        feeds=FeedCache(config.cache_dir / "feeds", http),
     )
 
     report = Report(indicator=indicator, indicator_type=indicator_type)

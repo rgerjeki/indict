@@ -13,17 +13,19 @@ from dataclasses import dataclass
 
 from ..cache import Cache
 from ..config import Config
+from ..feeds import FeedCache
 from ..http import Http
 from ..models import IndicatorType, SourceResult
 
 
 @dataclass
 class Context:
-    """Everything a source needs to do its job: config, HTTP, and cache."""
+    """Everything a source needs to do its job: config, HTTP, cache, and feeds."""
 
     config: Config
     http: Http
     cache: Cache
+    feeds: FeedCache
 
     def cached(
         self, source: str, indicator: str, producer: Callable[[], object]

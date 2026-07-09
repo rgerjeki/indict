@@ -14,6 +14,7 @@ import pytest
 
 from indict.cache import Cache
 from indict.config import Config
+from indict.feeds import FeedCache
 from indict.http import Http
 from indict.sources.base import Context
 
@@ -41,6 +42,7 @@ def ctx(config) -> Context:
         config=config,
         http=http,
         cache=Cache(config.cache_dir, config.cache_ttl, enabled=False),
+        feeds=FeedCache(config.cache_dir / "feeds", http, ttl=0),
     )
     yield context
     http.close()
