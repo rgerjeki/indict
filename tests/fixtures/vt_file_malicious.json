@@ -1,0 +1,22 @@
+{
+  "data": {
+    "id": "44d88612fea8a8f36de82e1278abb02f",
+    "type": "file",
+    "attributes": {
+      "type_description": "Win32 EXE",
+      "meaningful_name": "eicar.com",
+      "first_submission_date": 1136190960,
+      "reputation": -50,
+      "popular_threat_classification": {
+        "suggested_threat_label": "trojan.eicar/test"
+      },
+      "last_analysis_stats": {
+        "harmless": 0,
+        "malicious": 61,
+        "suspicious": 0,
+        "undetected": 5,
+        "timeout": 0
+      }
+    }
+  }
+}

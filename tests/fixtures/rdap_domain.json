@@ -1,0 +1,27 @@
+{
+  "objectClassName": "domain",
+  "ldhName": "example.com",
+  "events": [
+    {"eventAction": "registration", "eventDate": "1995-08-14T04:00:00Z"},
+    {"eventAction": "expiration", "eventDate": "2026-08-13T04:00:00Z"}
+  ],
+  "nameservers": [
+    {"ldhName": "a.iana-servers.net"},
+    {"ldhName": "b.iana-servers.net"}
+  ],
+  "entities": [
+    {
+      "roles": ["registrar"],
+      "vcardArray": ["vcard", [["version", {}, "text", "4.0"], ["fn", {}, "text", "IANA"]]]
+    },
+    {
+      "roles": ["registrant"],
+      "vcardArray": ["vcard", [
+        ["version", {}, "text", "4.0"],
+        ["fn", {}, "text", "Jane Analyst"],
+        ["email", {}, "text", "jane@example.com"],
+        ["org", {}, "text", "Example Org"]
+      ]]
+    }
+  ]
+}

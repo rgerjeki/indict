@@ -1,0 +1,43 @@
+# --- Secrets and local config ---
+.env
+.env.*
+!.env.example
+
+# --- Response cache and raw API dumps ---
+# Third-party terms of service often forbid rehosting their data.
+.cache/
+cache/
+
+# --- Real investigation output ---
+# A query history reveals what you are looking into. Keep runs local.
+runs/
+reports/
+*.report.local.md
+*.report.local.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# --- Tooling ---
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+
+# VS Code "Local History" extension: saves timestamped copies of edited files,
+# including .env snapshots with real keys. Never commit these.
+.history/

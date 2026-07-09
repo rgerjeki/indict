@@ -1,0 +1,13 @@
+{
+  "data": {
+    "ipAddress": "185.220.101.1",
+    "abuseConfidenceScore": 100,
+    "totalReports": 842,
+    "countryCode": "DE",
+    "isp": "Example Hosting",
+    "usageType": "Data Center/Web Hosting/Transit",
+    "domain": "example-host.net",
+    "isTor": true,
+    "lastReportedAt": "2026-06-30T12:00:00+00:00"
+  }
+}
